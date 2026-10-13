@@ -1,6 +1,7 @@
 #include "capture.h"
 #include <cstring>
 #include <cmath>
+#include <algorithm>
 
 extern "C" { void* ProbeTrampoline = nullptr; void* MissileProbeTrampoline = nullptr; }
 namespace {
@@ -12,7 +13,11 @@ std::atomic<uint64_t> seen{0}, captured{0}, dropped{0}, faults{0}, limited{0};
 uintptr_t metadataBase = 0, metadataEnd = 0;
 uintptr_t directionReturnA=0, directionReturnB=0;
 uintptr_t innerReturnA=0, innerReturnB=0;
+const MetadataBinding* metadataBindings=nullptr;
+size_t metadataBindingCount=0;
+std::atomic<uint64_t> sessionGeneration{0};
 }
+void SetMetadataBindings(const MetadataBinding* bindings,size_t size) noexcept {metadataBindings=bindings;metadataBindingCount=size;}
 void ConfigureDirectionReturns(uintptr_t first,uintptr_t second,uintptr_t innerFirst,uintptr_t innerSecond) noexcept {directionReturnA=first;directionReturnB=second;innerReturnA=innerFirst;innerReturnB=innerSecond;}
 void SetMetadataImageRange(uintptr_t base, size_t size) noexcept { metadataBase=base; metadataEnd=base+size; }
 bool CopyMSVCString(const void* source, char* out, size_t capacity) noexcept {
@@ -35,15 +40,19 @@ bool CopyMSVCString(const void* source, char* out, size_t capacity) noexcept {
 }
 static bool ReadMacro(uintptr_t object, char* out, size_t capacity) noexcept {
     if (!metadataBase || !object) return false;
-    // Verified definition-interface layout, +0x30 embedded interface, slot 4.
-    // Invoked only while the original handler owns valid object arguments.
+    // Whitelisted definition interface. Read the reviewed getter's fields;
+    // never execute a virtual game method from the observer.
     __try {
         const auto vtable=*reinterpret_cast<uintptr_t*>(object+0x30);
-        if(vtable<metadataBase || vtable+40>metadataEnd) return false;
+        if(vtable<metadataBase || vtable>metadataEnd-40 || !metadataBindingCount) return false;
+        const auto* end=metadataBindings+metadataBindingCount;
+        const auto* binding=std::lower_bound(metadataBindings,end,vtable,[](const auto& b,uintptr_t t){return b.table<t;});
+        if(binding==end||binding->table!=vtable)return false;
         const auto function=*reinterpret_cast<uintptr_t*>(vtable+0x20);
-        if(function<metadataBase || function>=metadataEnd) return false;
-        const void* text=reinterpret_cast<const void*(*)(void*)>(function)(reinterpret_cast<void*>(object+0x30));
-        return CopyMSVCString(text,out,capacity);
+        if(function!=binding->getter) return false;
+        uintptr_t definition=0;
+        if(!SafeCopy(&definition,reinterpret_cast<void*>(object+0x60),sizeof(definition))||!definition||definition>UINTPTR_MAX-0x20)return false;
+        return CopyMSVCString(reinterpret_cast<void*>(definition+0x20),out,capacity);
     } __except(EXCEPTION_EXECUTE_HANDLER) { out[0]=0; return false; }
 }
 bool SafeCopy(void* dst, const void* src, size_t length) noexcept {
@@ -52,6 +61,19 @@ bool SafeCopy(void* dst, const void* src, size_t length) noexcept {
     __except (EXCEPTION_EXECUTE_HANDLER) { std::memset(dst, 0, length); return false; }
 }
 void SetCapture(bool enabled) noexcept { active.store(enabled, std::memory_order_release); }
+void ResetCapture() noexcept {
+    active.store(false,std::memory_order_release);
+    sessionGeneration.fetch_add(1,std::memory_order_acq_rel);
+    AcquireSRWLockExclusive(&queueLock);
+    head=tail=count=0;
+    ReleaseSRWLockExclusive(&queueLock);
+}
+bool ContactFresh(const Contact& c) noexcept {
+    LARGE_INTEGER now{},frequency{};QueryPerformanceCounter(&now);QueryPerformanceFrequency(&frequency);
+    // At most 250 ms old: discard catch-up visuals instead of replaying stale hits.
+    return frequency.QuadPart>0&&now.QuadPart>=static_cast<LONGLONG>(c.ticks)&&
+           uint64_t(now.QuadPart)-c.ticks<=uint64_t(frequency.QuadPart)/4;
+}
 bool ReadContactDirection(const Registers& regs, const unsigned char* spatial, float* incoming, unsigned& source) noexcept {
     source=0; incoming[0]=incoming[1]=incoming[2]=0;
     if(!metadataBase || !regs.rsp || !regs.r8) return false;
@@ -90,14 +112,17 @@ bool ReadContactDirection(const Registers& regs, const unsigned char* spatial, f
     return true;
 }
 Stats CaptureStats() noexcept { return {seen.load(), captured.load(), dropped.load(), faults.load(), limited.load()}; }
-static void CaptureStoredContact(const Registers* regs, bool missile) noexcept {
+static void CaptureStoredContact(const Registers* regs, bool missile,uint64_t generation) noexcept {
     if (!active.load(std::memory_order_acquire)) return;
     const auto sequence = seen.fetch_add(1, std::memory_order_relaxed) + 1;
     const DWORD savedError = GetLastError();
     // Contention drops a visual contact instead of blocking the game thread.
     if (!TryAcquireSRWLockExclusive(&queueLock)) { ++dropped; SetLastError(savedError); return; }
+    if(!active.load(std::memory_order_acquire)||generation!=sessionGeneration.load(std::memory_order_acquire)) {
+        ReleaseSRWLockExclusive(&queueLock);SetLastError(savedError);return;
+    }
     if (count == 512) {
-        ++dropped; ReleaseSRWLockExclusive(&queueLock); SetLastError(savedError); return;
+        ++dropped;head=(head+1)%512;--count;
     }
     auto& rec = queue[tail];
     rec = {};
@@ -125,8 +150,9 @@ static void CaptureStoredContact(const Registers* regs, bool missile) noexcept {
     ReleaseSRWLockExclusive(&queueLock);
     SetLastError(savedError);
 }
-extern "C" void CaptureContact(const Registers* regs) noexcept { CaptureStoredContact(regs,false); }
+extern "C" void CaptureContact(const Registers* regs) noexcept { CaptureStoredContact(regs,false,sessionGeneration.load(std::memory_order_acquire)); }
 extern "C" void CaptureMissileContact(uintptr_t projectile, uintptr_t target, const float* localPosition) noexcept {
+    const auto generation=sessionGeneration.load(std::memory_order_acquire);
     if(!active.load(std::memory_order_acquire) || !projectile || !target) return;
     const DWORD savedError=GetLastError();
     // r13 already contains the target-local point. The collision producer at
@@ -139,7 +165,7 @@ extern "C" void CaptureMissileContact(uintptr_t projectile, uintptr_t target, co
     Registers regs{};regs.rcx=projectile;regs.rdx=target;regs.r8=reinterpret_cast<uintptr_t>(spatial);
     // r9 at the missile entry is not a verified flight segment. Do not use it
     // as an incoming direction; the fleet renderer retains nearest-point fallback.
-    CaptureStoredContact(&regs,true);
+    CaptureStoredContact(&regs,true,generation);
     SetLastError(savedError);
 }
 bool PopContact(Contact& out) noexcept {

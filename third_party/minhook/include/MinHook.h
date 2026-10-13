@@ -79,7 +79,10 @@ typedef enum MH_STATUS
     MH_ERROR_MODULE_NOT_FOUND,
 
     // The specified function is not found.
-    MH_ERROR_FUNCTION_NOT_FOUND
+    MH_ERROR_FUNCTION_NOT_FOUND,
+
+    // SVR: a thread could not be safely enumerated, suspended or inspected.
+    MH_ERROR_THREAD_FAILURE
 }
 MH_STATUS;
 
@@ -99,45 +102,45 @@ extern "C" {
     // ONCE at the end of your program.
     MH_STATUS WINAPI MH_Uninitialize(VOID);
 
-    // Creates a Hook for the specified target function, in disabled state.
+    // Creates a hook for the specified target function, in disabled state.
     // Parameters:
-    //   pTarget    [in]  A pointer to the target function, which will be
-    //                    overridden by the detour function.
-    //   pDetour    [in]  A pointer to the detour function, which will override
-    //                    the target function.
-    //   ppOriginal [out] A pointer to the trampoline function, which will be
-    //                    used to call the original target function.
-    //                    This parameter can be NULL.
+    //   pTarget     [in]  A pointer to the target function, which will be
+    //                     overridden by the detour function.
+    //   pDetour     [in]  A pointer to the detour function, which will override
+    //                     the target function.
+    //   ppOriginal  [out] A pointer to the trampoline function, which will be
+    //                     used to call the original target function.
+    //                     This parameter can be NULL.
     MH_STATUS WINAPI MH_CreateHook(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOriginal);
 
-    // Creates a Hook for the specified API function, in disabled state.
+    // Creates a hook for the specified API function, in disabled state.
     // Parameters:
-    //   pszModule  [in]  A pointer to the loaded module name which contains the
-    //                    target function.
-    //   pszTarget  [in]  A pointer to the target function name, which will be
-    //                    overridden by the detour function.
-    //   pDetour    [in]  A pointer to the detour function, which will override
-    //                    the target function.
-    //   ppOriginal [out] A pointer to the trampoline function, which will be
-    //                    used to call the original target function.
-    //                    This parameter can be NULL.
+    //   pszModule   [in]  A pointer to the loaded module name which contains the
+    //                     target function.
+    //   pszProcName [in]  A pointer to the target function name, which will be
+    //                     overridden by the detour function.
+    //   pDetour     [in]  A pointer to the detour function, which will override
+    //                     the target function.
+    //   ppOriginal  [out] A pointer to the trampoline function, which will be
+    //                     used to call the original target function.
+    //                     This parameter can be NULL.
     MH_STATUS WINAPI MH_CreateHookApi(
         LPCWSTR pszModule, LPCSTR pszProcName, LPVOID pDetour, LPVOID *ppOriginal);
 
-    // Creates a Hook for the specified API function, in disabled state.
+    // Creates a hook for the specified API function, in disabled state.
     // Parameters:
-    //   pszModule  [in]  A pointer to the loaded module name which contains the
-    //                    target function.
-    //   pszTarget  [in]  A pointer to the target function name, which will be
-    //                    overridden by the detour function.
-    //   pDetour    [in]  A pointer to the detour function, which will override
-    //                    the target function.
-    //   ppOriginal [out] A pointer to the trampoline function, which will be
-    //                    used to call the original target function.
-    //                    This parameter can be NULL.
-    //   ppTarget   [out] A pointer to the target function, which will be used
-    //                    with other functions.
-    //                    This parameter can be NULL.
+    //   pszModule   [in]  A pointer to the loaded module name which contains the
+    //                     target function.
+    //   pszProcName [in]  A pointer to the target function name, which will be
+    //                     overridden by the detour function.
+    //   pDetour     [in]  A pointer to the detour function, which will override
+    //                     the target function.
+    //   ppOriginal  [out] A pointer to the trampoline function, which will be
+    //                     used to call the original target function.
+    //                     This parameter can be NULL.
+    //   ppTarget    [out] A pointer to the target function, which will be used
+    //                     with other functions.
+    //                     This parameter can be NULL.
     MH_STATUS WINAPI MH_CreateHookApiEx(
         LPCWSTR pszModule, LPCSTR pszProcName, LPVOID pDetour, LPVOID *ppOriginal, LPVOID *ppTarget);
 
@@ -183,4 +186,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-

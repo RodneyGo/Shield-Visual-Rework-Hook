@@ -1,16 +1,16 @@
 {
-  "native_version": "0.54-dev1",
-  "status": "experimental",
+  "native_version": "0.54-dev2",
+  "status": "experimental; standalone tested, game test pending",
   "baseline": "X4 9.00 build 611726",
-  "tested_dll_sha256": "fa93e14441fd43af74e982446c6124b44e33e4acddfcbed1ed31b465a2f75bb7",
+  "tested_dll_sha256": "db87ff2024236a56b91dfe76f24da3f2c4973d0c1c34ea3e6a3bf0e1fb63878f",
   "other_real_build_tested": false,
   "sources": {
-    "probe.cpp": "e4e2cfaceea656ec8fa3ef0eefc6e12cfb1401eef7add8cae4dcd661a2f61a15",
-    "capture.cpp": "d0d4293762963286edc5ba791441ec72ace0805634507852c30e4b86288fee0a",
-    "capture.h": "d6f7e46a72d7d22d73b80f12e1fd765e69bd28df19a8bece37d74b16558984b5",
+    "probe.cpp": "52ab6a8bbaa79a1d191cb0050da2fc436c3480d93565c8c7bf56c06b395fea5a",
+    "capture.cpp": "d6d10a2feec71a374a84d3a5b97e45afd87949ee57424f19891cdda0ddbb2ca4",
+    "capture.h": "ae7a3ab1099c0cb35669a7cdb0be22e80f144849c441160f66de9709a9c39c60",
     "entry.asm": "bc85172657f8c14b749b1681de6d236b6613ca572e23d0e926e94df14234733e",
-    "fleet_shell.cpp": "fe11bc6acd07d11c2f8cd25e41ca3462249926006659c886156f823e3c5931c9",
-    "fleet_shell.h": "4f53db7fe5c9425f58061bdcc1cd8c30853f3fcbe0cd666411139ce4460565fd",
+    "fleet_shell.cpp": "426947d52629c1b298fb86868f643bd9d883e50ab20f5cb4fd12786ca7a12a89",
+    "fleet_shell.h": "b4e6aaed813d82601be844432c4d6cebeb1d2562a1566a3a3a6758dea9d2aca8",
     "shell.h": "f369eb9874205ef67446fc6ddff4a30b4dc9c5f05805f4a01ca1443ee0c8d631",
     "selftest.cpp": "88aab1d802330788f0b700690dcf8db85717957ad006b8f565502f3ace8c56f2",
     "missile_selftest.cpp": "5c95cfd724299bc313298526ea0dd7e51986daa1eab38feada3866aa8ead28e5",
@@ -18,6 +18,11 @@
     "compatibility.cpp": "30343efb1026b0ed48735872090b7e105ed6e38ebbeaefdf3fb7c7745ec7e3b6",
     "compatibility.h": "822a8c5682ea6777b136917c7c898b67fbf3e13f52d91040900493560a502499",
     "compatibility_profiles.h": "779bb836bfe8528bb62cbfa69c5c3d9e88ffe45819a2268f28c73910b1e4ff59",
-    "compatibility_audit.cpp": "13311f33a918c521bc5d548850bb743e98a02710d42c0d8c34193cd2c3d3da86"
+    "compatibility_audit.cpp": "da8491c9927f3e3680ad5cffa19404528ce5f2d9c75201baa81275d35ea5ef90",
+    "abi.cpp": "095075cf1625effe94cce349250cb5b71b4564874430343b749744ecf683ebe2",
+    "abi.h": "b768e6bfacb36e9681c6a64b231ab3010b874115122e7a53525b95c9bc4d255e",
+    "abi_profiles.h": "0c73ce2b0540c1f8122fb089f8ed71bb3a77e1bbcdd3b16f2ae051fcbf464517",
+    "fleet_direction_selftest.cpp": "96fc5768fb638729b004cb7c793b0948e06413a8e94988668e8efd3e826dd985",
+    "loader_selftest.cpp": "944d013a85e6ad7ff3d8266925e5a371ae26e88c04286cbe6919196ade61f9e9"
   }
 }

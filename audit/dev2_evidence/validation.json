@@ -1,0 +1,56 @@
+{
+  "version": "0.54-dev2",
+  "abi": {
+    "baseline": {
+      "accepted": true,
+      "metadata_tables": 120
+    },
+    "timestamp": {
+      "accepted": true,
+      "metadata_tables": 120
+    },
+    "resource": {
+      "accepted": true,
+      "metadata_tables": 120
+    },
+    "aslr": {
+      "accepted": true,
+      "metadata_tables": 120
+    },
+    "live-change": {
+      "accepted": false,
+      "metadata_tables": 0
+    },
+    "external_callee": {
+      "accepted": false,
+      "metadata_tables": 0
+    },
+    "getter": {
+      "accepted": false,
+      "metadata_tables": 0
+    },
+    "unrelated_code": {
+      "accepted": false,
+      "metadata_tables": 0
+    },
+    "vtable": {
+      "accepted": false,
+      "metadata_tables": 0
+    },
+    "data": {
+      "accepted": false,
+      "metadata_tables": 0
+    },
+    "unwind": {
+      "accepted": false,
+      "metadata_tables": 0
+    }
+  },
+  "fleet": [
+    "PASS: directional BVH and brute ray comparison plus fallback across 270 profiles.",
+    "PASS: directional BVH and brute ray comparison plus fallback across 251 profiles."
+  ],
+  "lua_lifecycle": "PASS: real LuaJIT syntax/load/API, wrong-EXE rejection, simulated UI bridge. No game process started.\nPASS: menu/load, repeated menu, new session, backward clock and addon rediscovery",
+  "game_tested": false,
+  "installed": false
+}

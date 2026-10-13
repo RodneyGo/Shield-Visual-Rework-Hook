@@ -2,7 +2,7 @@
 
 Shield Visuals Rework native component by Rodney.
 
-MinHook 1.3.3, Copyright (C) 2009–2017 Tsuda Kageyu, is bundled under
+MinHook 1.3.4 with SVR thread-error handling, Copyright (C) 2009–2017 Tsuda Kageyu, is bundled under
 `third_party/minhook`. Its BSD-style license, bundled Hacker Disassembler
 Engine notices and authors list are preserved there and in source headers.
 See [the full notices](third_party/minhook/LICENSE.txt) and

@@ -12,3 +12,5 @@ CMakeUserPresets.json
 *.exp
 
 !binaries/0.54-dev1/svr_contact_probe.dll
+
+!binaries/0.54-dev2/svr_contact_probe.dll

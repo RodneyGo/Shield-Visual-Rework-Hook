@@ -3,6 +3,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include "abi.h"
 
 // Layout shared with entry.asm. No assumed C++ signature of the game function.
 struct Registers {
@@ -34,10 +35,13 @@ extern "C" void MissileProbeEntry();
 extern "C" void* MissileProbeTrampoline;
 extern "C" void CaptureMissileContact(uintptr_t projectile, uintptr_t target, const float* localPosition) noexcept;
 void SetCapture(bool enabled) noexcept;
+void ResetCapture() noexcept;
+bool ContactFresh(const Contact&) noexcept;
 bool PopContact(Contact&) noexcept;
 Stats CaptureStats() noexcept;
 bool SafeCopy(void* dst, const void* src, size_t length) noexcept;
 void SetMetadataImageRange(uintptr_t base, size_t size) noexcept;
+void SetMetadataBindings(const MetadataBinding* bindings, size_t count) noexcept;
 bool ReadContactDirection(const Registers&, const unsigned char* spatial, float* incoming, unsigned& source) noexcept;
 bool CopyMSVCString(const void* source, char* out, size_t capacity) noexcept;
 

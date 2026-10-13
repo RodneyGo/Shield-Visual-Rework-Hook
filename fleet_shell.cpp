@@ -7,6 +7,8 @@
 #include <map>
 #include <numeric>
 #include <vector>
+#include <set>
+#include <chrono>
 
 namespace {
 #pragma pack(push, 1)
@@ -26,6 +28,12 @@ struct Mesh {
 struct SourceEntry { Entry meta; std::wstring path; bool prebuilt; uint64_t bytes; };
 std::map<unsigned, SourceEntry> entries;
 std::map<unsigned, Mesh> loaded;
+std::set<unsigned> failedLoads;
+size_t loadedBytes=0;
+uint64_t loadAttempts=0,loadFailures=0,lastLoadMicroseconds=0;
+constexpr size_t CacheBudget=256ull*1024*1024;
+constexpr unsigned MaxVertices=65536,MaxFaces=131072;
+constexpr float CoordinateLimit=1000000.f;
 Vec3 operator+(Vec3 a, Vec3 b) { return {a.x+b.x,a.y+b.y,a.z+b.z}; }
 Vec3 operator-(Vec3 a, Vec3 b) { return {a.x-b.x,a.y-b.y,a.z-b.z}; }
 Vec3 operator*(Vec3 a, float s) { return {a.x*s,a.y*s,a.z*s}; }
@@ -35,6 +43,7 @@ float Axis(Vec3 a, int i) { return i==0?a.x:i==1?a.y:a.z; }
 Vec3 Min(Vec3 a, Vec3 b) { return {std::min(a.x,b.x),std::min(a.y,b.y),std::min(a.z,b.z)}; }
 Vec3 Max(Vec3 a, Vec3 b) { return {std::max(a.x,b.x),std::max(a.y,b.y),std::max(a.z,b.z)}; }
 bool Finite(Vec3 a) { return std::isfinite(a.x)&&std::isfinite(a.y)&&std::isfinite(a.z); }
+bool Bounded(Vec3 a) {return Finite(a)&&std::abs(a.x)<=CoordinateLimit&&std::abs(a.y)<=CoordinateLimit&&std::abs(a.z)<=CoordinateLimit;}
 #ifdef SVR_BVH_BUILDER
 Vec3 Centre(const Mesh& m,unsigned face) { auto& f=m.faces[face];return (m.vertices[f[0]]+m.vertices[f[1]]+m.vertices[f[2]])*(1.f/3.f); }
 unsigned Build(Mesh& m, unsigned begin, unsigned count) {
@@ -85,7 +94,14 @@ bool ValidateTree(const Mesh& m) {
 }
 Vec3 Nearest(const Mesh& m, Vec3 p, unsigned face) {
     auto& f=m.faces[face];Vec3 a=m.vertices[f[0]],b=m.vertices[f[1]],c=m.vertices[f[2]];
-    Vec3 ab=b-a,ac=c-a,ap=p-a;float d1=Dot(ab,ap),d2=Dot(ac,ap);if(d1<=0&&d2<=0)return a;
+    Vec3 ab=b-a,ac=c-a,ap=p-a;
+    const Vec3 area=Cross(ab,ac);
+    if(Dot(area,area)<1e-20f) {
+        auto segment=[&](Vec3 v,Vec3 w){Vec3 d=w-v;float l=Dot(d,d);return l>1e-20f?v+d*std::clamp(Dot(p-v,d)/l,0.f,1.f):v;};
+        Vec3 best=segment(a,b);for(auto q:{segment(b,c),segment(c,a)})if(Dot(p-q,p-q)<Dot(p-best,p-best))best=q;
+        return best;
+    }
+    float d1=Dot(ab,ap),d2=Dot(ac,ap);if(d1<=0&&d2<=0)return a;
     Vec3 bp=p-b;float d3=Dot(ab,bp),d4=Dot(ac,bp);if(d3>=0&&d4<=d3)return b;
     float vc=d1*d4-d3*d2;if(vc<=0&&d1>=0&&d3<=0)return a+ab*(d1/(d1-d3));
     Vec3 cp=p-c;float d5=Dot(ab,cp),d6=Dot(ac,cp);if(d6>=0&&d5<=d6)return c;
@@ -96,7 +112,7 @@ Vec3 Nearest(const Mesh& m, Vec3 p, unsigned face) {
 }
 void Triangle(const Mesh& m, Vec3 p, unsigned face, ShellProjection& r, float& best) {
     ++r.tested;Vec3 q=Nearest(m,p,face),d=p-q;float sq=Dot(d,d);
-    if(sq<best){best=sq;r.point=q;r.face=face;}
+    if(Finite(q)&&std::isfinite(sq)&&sq<best){best=sq;r.point=q;r.face=face;}
 }
 float BoxDistance(Vec3 p,const Node& n) {Vec3 d=p-Max(n.lo,Min(n.hi,p));return Dot(d,d);}
 void Query(const Mesh& m,unsigned index,Vec3 p,ShellProjection& r,float& best) {
@@ -107,10 +123,20 @@ void Query(const Mesh& m,unsigned index,Vec3 p,ShellProjection& r,float& best) {
 }
 Mesh* Load(unsigned id) {
     if(auto it=loaded.find(id);it!=loaded.end())return &it->second;
+    if(failedLoads.count(id))return nullptr;
     auto it=entries.find(id);if(it==entries.end())return nullptr;
+    failedLoads.insert(id);
+    struct Timer {
+        std::chrono::steady_clock::time_point start=std::chrono::steady_clock::now();
+        bool success=false;
+        ~Timer(){lastLoadMicroseconds=std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start).count();if(!success)++loadFailures;}
+    } timer;
+    ++loadAttempts;
     const auto& source=it->second;
     const bool prebuilt=source.prebuilt;
     const uint64_t dataSize=source.bytes;
+    const size_t upperBytes=12ull*source.meta.vertices+96ull*source.meta.faces;
+    if(upperBytes>CacheBudget-loadedBytes)return nullptr;
     FILE* file=nullptr;if(_wfopen_s(&file,source.path.c_str(),L"rb")||!file)return nullptr;
     Mesh m;m.meta=source.meta;
     // Allocation failures must not leak the file or partially publish a mesh.
@@ -130,7 +156,7 @@ Mesh* Load(unsigned id) {
         }
     }
     fclose(file);if(!ok)return nullptr;
-    for(auto v:m.vertices)if(!Finite(v))return nullptr;
+    for(auto v:m.vertices)if(!Bounded(v))return nullptr;
     for(auto f:m.faces)for(unsigned v:f)if(v>=m.vertices.size())return nullptr;
     if(prebuilt) {if(!ValidateTree(m))return nullptr;}
 #ifdef SVR_BVH_BUILDER
@@ -141,11 +167,19 @@ Mesh* Load(unsigned id) {
 #else
     else return nullptr;
 #endif
-    return &loaded.emplace(id,std::move(m)).first->second;
+    const size_t bytes=12*m.vertices.size()+12*m.faces.size()+4*m.order.size()+40*m.nodes.size();
+    auto* result=&loaded.emplace(id,std::move(m)).first->second;
+    loadedBytes+=bytes;failedLoads.erase(id);timer.success=true;return result;
 }
-void Encode(const Mesh& m,ShellProjection& r) {
-    unsigned q[3];for(int i=0;i<3;++i)q[i]=static_cast<unsigned>(std::clamp(std::floor((Axis(r.point,i)-m.meta.lo[i])/m.meta.span[i]*m.meta.quanta[i]+.5f),0.f,float(m.meta.quanta[i])));
+bool Encode(const Mesh& m,ShellProjection& r) {
+    if(!Bounded(r.point)||!std::isfinite(r.distance))return false;
+    unsigned q[3];for(int i=0;i<3;++i){
+        const double value=(double(Axis(r.point,i))-m.meta.lo[i])/m.meta.span[i]*m.meta.quanta[i]+.5;
+        if(!std::isfinite(value))return false;
+        q[i]=static_cast<unsigned>(std::clamp(std::floor(value),0.,double(m.meta.quanta[i])));
+    }
     r.code=q[0]+(m.meta.quanta[0]+1)*(q[1]+(m.meta.quanta[1]+1)*q[2]);
+    return r.code<2097152;
 }
 bool RayBox(Vec3 p,Vec3 d,const Node& n,float limit) {
     float lo=0,hi=limit;
@@ -163,11 +197,12 @@ void RayQuery(const Mesh& m,unsigned index,Vec3 p,Vec3 d,ShellProjection& r,floa
     for(unsigned i=n.begin;i<n.begin+n.count;++i) {
         ++r.tested;const unsigned face=m.order[i];const auto& f=m.faces[face];
         Vec3 a=m.vertices[f[0]],e1=m.vertices[f[1]]-a,e2=m.vertices[f[2]]-a,h=Cross(d,e2);
-        float det=Dot(e1,h);if(std::abs(det)<1e-8f)continue;
-        const float inv=1.0f/det;Vec3 s=p-a;float u=Dot(s,h)*inv;if(u<0||u>1)continue;
-        Vec3 q=Cross(s,e1);float v=Dot(d,q)*inv;if(v<0||u+v>1)continue;
-        float t=Dot(e2,q)*inv;if(t<0||t>best)continue;
-        best=t;r.point=p+d*t;r.face=face;found=true;
+        float det=Dot(e1,h);if(!std::isfinite(det)||std::abs(det)<1e-8f)continue;
+        const float inv=1.0f/det;Vec3 s=p-a;float u=Dot(s,h)*inv;if(!std::isfinite(u)||u<0||u>1)continue;
+        Vec3 q=Cross(s,e1);float v=Dot(d,q)*inv;if(!std::isfinite(v)||v<0||u+v>1)continue;
+        float t=Dot(e2,q)*inv;if(!std::isfinite(t)||t<0||t>best)continue;
+        Vec3 point=p+d*t;if(!Bounded(point))continue;
+        best=t;r.point=point;r.face=face;found=true;
     }
 }
 bool Project(unsigned id,Vec3 p,ShellProjection& r,bool brute) {
@@ -176,8 +211,7 @@ bool Project(unsigned id,Vec3 p,ShellProjection& r,bool brute) {
     float best=1e30f;
     if(brute)for(unsigned i=0;i<m->faces.size();++i)Triangle(*m,p,i,r,best);else Query(*m,0,p,r,best);
     r.distance=std::sqrt(best);if(!std::isfinite(r.distance)||r.distance>120)return false;
-    Encode(*m,r);
-    return true;
+    return Encode(*m,r);
 }
 bool ProjectIncoming(unsigned id,Vec3 p,Vec3 incoming,ShellProjection& r) {
     r={};if(!Finite(p)||!Finite(incoming))return false;
@@ -189,11 +223,11 @@ bool ProjectIncoming(unsigned id,Vec3 p,Vec3 incoming,ShellProjection& r) {
     Vec3 span{m->meta.span[0],m->meta.span[1],m->meta.span[2]};float best=std::sqrt(Dot(span,span))+120;
     bool found=false;RayQuery(*m,0,p,incoming*(-1.0f/length),r,best,found);
     if(!found)return false;
-    r.distance=best;r.tested+=near.tested;Encode(*m,r);return true;
+    r.distance=best;r.tested+=near.tested;return Encode(*m,r);
 }
 }
 bool ConfigureFleetShells(const std::wstring& path) {
-    entries.clear();loaded.clear();
+    entries.clear();loaded.clear();failedLoads.clear();loadedBytes=0;
     return AddFleetShells(path);
 }
 bool AddFleetShells(const std::wstring& path) {
@@ -215,11 +249,11 @@ bool AddFleetShells(const std::wstring& path) {
     std::map<unsigned,SourceEntry> checked;
     for(auto e:table) {
         uint64_t length=12ull*(e.vertices+uint64_t(e.faces))+(prebuilt?4ull+4ull*e.faces+sizeof(Node):0);
-        if(!e.id||e.id>4096||!e.vertices||e.vertices>2000000||!e.faces||e.faces>4000000||
+        if(!e.id||e.id>4096||!e.vertices||e.vertices>MaxVertices||!e.faces||e.faces>MaxFaces||
            e.offset<12+sizeof(Entry)*count||e.offset>uint64_t(fileSize)||length>uint64_t(fileSize)-e.offset)return false;
         uint64_t product=1;
         for(int i=0;i<3;++i){
-            if(!std::isfinite(e.lo[i])||!std::isfinite(e.span[i])||e.span[i]<=0||!e.quanta[i]||e.quanta[i]>2097151)return false;
+            if(!std::isfinite(e.lo[i])||std::abs(e.lo[i])>CoordinateLimit||!std::isfinite(e.span[i])||e.span[i]<=0||e.span[i]>2*CoordinateLimit||!e.quanta[i]||e.quanta[i]>2097151)return false;
             product*=uint64_t(e.quanta[i])+1;
         }
         if(product!=2097152||entries.count(e.id)||!checked.emplace(e.id,SourceEntry{e,path,prebuilt,uint64_t(fileSize)}).second)return false;
@@ -231,8 +265,9 @@ bool HasFleetProfile(unsigned id) { return entries.count(id)!=0; }
 bool ProjectFleet(unsigned id,Vec3 p,ShellProjection& r) {try{return Project(id,p,r,false);}catch(...){return false;}}
 bool ProjectFleetBrute(unsigned id,Vec3 p,ShellProjection& r) {try{return Project(id,p,r,true);}catch(...){return false;}}
 bool ProjectFleetIncoming(unsigned id,Vec3 p,Vec3 incoming,ShellProjection& r) {try{return ProjectIncoming(id,p,incoming,r);}catch(...){return false;}}
-void ReleaseFleetShells(){loaded.clear();}
+void ReleaseFleetShells(){loaded.clear();failedLoads.clear();loadedBytes=0;}
 unsigned FleetProfileCount(){return static_cast<unsigned>(entries.size());}
+FleetCacheStats FleetCacheStatistics(){return {loadAttempts,loadFailures,loadedBytes,lastLoadMicroseconds};}
 #ifdef SVR_BVH_BUILDER
 bool BakeFleetShells(const std::wstring& input,const std::wstring& output) {
     if(input==output||!ConfigureFleetShells(input))return false;
@@ -246,7 +281,7 @@ bool BakeFleetShells(const std::wstring& input,const std::wstring& output) {
         ok=ok&&fwrite(m->vertices.data(),12,m->vertices.size(),out)==m->vertices.size()&&
           fwrite(m->faces.data(),12,m->faces.size(),out)==m->faces.size()&&fwrite(&nodes,4,1,out)==1&&
           fwrite(m->order.data(),4,m->order.size(),out)==m->order.size()&&fwrite(m->nodes.data(),40,nodes,out)==nodes;
-        loaded.clear();if(!ok)break;
+        ReleaseFleetShells();if(!ok)break;
     }
     ok=ok&&_fseeki64(out,12,SEEK_SET)==0&&fwrite(table.data(),sizeof(Entry),count,out)==count;
     if(fclose(out)!=0)ok=false;

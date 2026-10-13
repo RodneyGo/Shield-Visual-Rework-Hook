@@ -1,0 +1,2 @@
+PASS: real LuaJIT syntax/load/API, wrong-EXE rejection, simulated UI bridge. No game process started.
+PASS: menu/load, repeated menu, new session, backward clock and addon rediscovery

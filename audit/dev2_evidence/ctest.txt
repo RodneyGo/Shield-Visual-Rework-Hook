@@ -1,0 +1,37 @@
+Test project C:/Users/Rodney/Desktop/X4 Spherical Shield FX Mod/build/native_hardening_054dev2/obj
+      Start  1: native_capture
+ 1/16 Test  #1: native_capture ...................   Passed    0.12 sec
+      Start  2: missile_capture
+ 2/16 Test  #2: missile_capture ..................   Passed    0.11 sec
+      Start  3: runtime_regression
+ 3/16 Test  #3: runtime_regression ...............   Passed    0.34 sec
+      Start  4: minhook_failure_1
+ 4/16 Test  #4: minhook_failure_1 ................   Passed    0.01 sec
+      Start  5: minhook_failure_2
+ 5/16 Test  #5: minhook_failure_2 ................   Passed    0.07 sec
+      Start  6: minhook_failure_3
+ 6/16 Test  #6: minhook_failure_3 ................   Passed    0.06 sec
+      Start  7: minhook_failure_4
+ 7/16 Test  #7: minhook_failure_4 ................   Passed    0.08 sec
+      Start  8: minhook_failure_5
+ 8/16 Test  #8: minhook_failure_5 ................   Passed    0.08 sec
+      Start  9: minhook_failure_6
+ 9/16 Test  #9: minhook_failure_6 ................   Passed    0.06 sec
+      Start 10: geometry_normal
+10/16 Test #10: geometry_normal ..................   Passed    0.01 sec
+      Start 11: geometry_extreme_finite
+11/16 Test #11: geometry_extreme_finite ..........   Passed    0.01 sec
+      Start 12: geometry_extreme_overflow
+12/16 Test #12: geometry_extreme_overflow ........   Passed    0.01 sec
+      Start 13: geometry_invalid_index
+13/16 Test #13: geometry_invalid_index ...........   Passed    0.01 sec
+      Start 14: geometry_cyclic_node
+14/16 Test #14: geometry_cyclic_node .............   Passed    0.01 sec
+      Start 15: geometry_nan_vertex
+15/16 Test #15: geometry_nan_vertex ..............   Passed    0.01 sec
+      Start 16: geometry_wrong_quanta
+16/16 Test #16: geometry_wrong_quanta ............   Passed    0.01 sec
+
+100% tests passed out of 16
+
+Total Test time (real) =   1.05 sec
