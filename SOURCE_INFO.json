@@ -1,0 +1,23 @@
+{
+  "native_version": "0.54-dev1",
+  "status": "experimental",
+  "baseline": "X4 9.00 build 611726",
+  "tested_dll_sha256": "fa93e14441fd43af74e982446c6124b44e33e4acddfcbed1ed31b465a2f75bb7",
+  "other_real_build_tested": false,
+  "sources": {
+    "probe.cpp": "e4e2cfaceea656ec8fa3ef0eefc6e12cfb1401eef7add8cae4dcd661a2f61a15",
+    "capture.cpp": "d0d4293762963286edc5ba791441ec72ace0805634507852c30e4b86288fee0a",
+    "capture.h": "d6f7e46a72d7d22d73b80f12e1fd765e69bd28df19a8bece37d74b16558984b5",
+    "entry.asm": "bc85172657f8c14b749b1681de6d236b6613ca572e23d0e926e94df14234733e",
+    "fleet_shell.cpp": "fe11bc6acd07d11c2f8cd25e41ca3462249926006659c886156f823e3c5931c9",
+    "fleet_shell.h": "4f53db7fe5c9425f58061bdcc1cd8c30853f3fcbe0cd666411139ce4460565fd",
+    "shell.h": "f369eb9874205ef67446fc6ddff4a30b4dc9c5f05805f4a01ca1443ee0c8d631",
+    "selftest.cpp": "88aab1d802330788f0b700690dcf8db85717957ad006b8f565502f3ace8c56f2",
+    "missile_selftest.cpp": "5c95cfd724299bc313298526ea0dd7e51986daa1eab38feada3866aa8ead28e5",
+    "missile_fixture.asm": "b7d3012752eace73ed425f28e4436aa023b6ad45d98943896b85721816cfebb8",
+    "compatibility.cpp": "30343efb1026b0ed48735872090b7e105ed6e38ebbeaefdf3fb7c7745ec7e3b6",
+    "compatibility.h": "822a8c5682ea6777b136917c7c898b67fbf3e13f52d91040900493560a502499",
+    "compatibility_profiles.h": "779bb836bfe8528bb62cbfa69c5c3d9e88ffe45819a2268f28c73910b1e4ff59",
+    "compatibility_audit.cpp": "13311f33a918c521bc5d548850bb743e98a02710d42c0d8c34193cd2c3d3da86"
+  }
+}

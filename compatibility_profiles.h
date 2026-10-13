@@ -1,0 +1,10 @@
+// Generated from the verified baseline. Contains hashes, not game function bodies.
+#pragma once
+#include "compatibility.h"
+inline constexpr FunctionProfile Profiles[] = {
+    {"contact", 4203, 0, 52, "e0a3aea86a3e30bd6ebb9777cd452e221b548ac1d8b887289c73e4398a542a31", "589ad244093bf2674d0a61b06e121e258e13a0dbad134f7467393bb6d3658227"},
+    {"missile", 1584, 709, 50, "bebc862c600227e33b35ee956b26e5233ce26140fc6a321d028e65f2f454d573", "0cec0802a47374312c2a9731dc212db51c66a052b4ca3844f9314ad3fd445ff1"},
+    {"direction", 4770, 0, 56, "86fcd314c76abab79ea30cd2c470657bb587211816cece53936443c2568b9246", "0877493785ebbfd8e029f5db6ad63c45f77a81757f5d686295e351ca2bc659f5"},
+    {"missile_producer", 1332, 1031, 42, "9b777c87ee5005dc7b877d0796499070388206ae1e76185744fb2b7fb9773031", "5f27cc09d95afd467f24a9c1c8b01395ff9338d1ff85728af6324c6e8a5b1277"},
+    {"direction_wrapper", 377, 0, 28, "69cefeeff88c8704648ce8e254bed3bcf3773c424a3fae596300360517110ad7", "53c8405f8a46d533d7896f8ab9b29869c447b37435cd2980397d67cd68a9747c"},
+};

@@ -1,0 +1,14 @@
+/out*/
+/build/
+/.vs/
+/logs/
+CMakeUserPresets.json
+*.dll
+*.exe
+*.pdb
+*.obj
+*.lib
+*.ilk
+*.exp
+
+!binaries/0.54-dev1/svr_contact_probe.dll
