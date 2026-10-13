@@ -1,0 +1,2 @@
+# Preserve exported bytes so FILES.sha256 also verifies after checkout.
+* -text
