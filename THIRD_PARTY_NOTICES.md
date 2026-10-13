@@ -11,4 +11,4 @@ See [the full notices](third_party/minhook/LICENSE.txt) and
 No X4 executable, game LuaJIT DLL, ship meshes or textures are included.
 X4: Foundations belongs to its respective rights holders.
 Third-party terms apply to their respective code, not automatically to
-SVR-authored code. This export does not select a license for that code.
+SVR-authored code, which is licensed under the MIT License in LICENSE.

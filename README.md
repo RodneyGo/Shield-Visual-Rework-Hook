@@ -173,9 +173,10 @@ The extracted directory can be used as a GitHub repository root. Commit the
 source, documentation, manifests and third-party notices. `.gitignore` excludes
 build output. No automatic upload, update or installation is performed by these sources.
 
+SVR-authored source code and documentation are licensed under the
+[MIT License](LICENSE), Copyright (c) 2026 RodneyGo.
+
 MinHook and its bundled disassembler retain their original licenses in
 `third_party/minhook/LICENSE.txt` and source headers; see
-`THIRD_PARTY_NOTICES.md`. No project-wide open-source license has been selected
-for the SVR-authored code in this export. The author should choose and add a
-license before describing the repository as open source; the third-party
-license does not automatically license the rest of the project.
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The MIT license for SVR does
+not replace those third-party terms or license any X4 game assets.
