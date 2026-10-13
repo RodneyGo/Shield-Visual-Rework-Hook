@@ -1,0 +1,37 @@
+{
+  "callee_mutation": {
+    "caller_rva": "0x6082e0",
+    "callee_rva": "0x3dde10",
+    "all_profiles_accepted": true
+  },
+  "geometry": {
+    "normal": {
+      "exit": 0,
+      "output": "accepted=1 nearest=1 distance=0 code=8256\nray=1 finite_point=1 distance=-0 point=0,0,0"
+    },
+    "extreme_finite": {
+      "exit": 0,
+      "output": "accepted=1 nearest=1 distance=0 code=0\nray=1 finite_point=1 distance=-0 point=0,0,0"
+    },
+    "extreme_overflow": {
+      "exit": 0,
+      "output": "accepted=1 nearest=1 distance=0 code=8256\nray=1 finite_point=0 distance=-nan(ind) point=-nan(ind),-nan(ind),-nan(ind)"
+    },
+    "invalid_index": {
+      "exit": 0,
+      "output": "accepted=1 nearest=0 distance=0 code=0\nray=0 finite_point=1 distance=0 point=0,0,0"
+    },
+    "cyclic_node": {
+      "exit": 0,
+      "output": "accepted=1 nearest=0 distance=0 code=0\nray=0 finite_point=1 distance=0 point=0,0,0"
+    },
+    "nan_vertex": {
+      "exit": 0,
+      "output": "accepted=1 nearest=0 distance=0 code=0\nray=0 finite_point=1 distance=0 point=0,0,0"
+    },
+    "wrong_quanta": {
+      "exit": 0,
+      "output": "accepted=0 nearest=0 distance=0 code=0\nray=0 finite_point=1 distance=0 point=0,0,0"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+PASS: directional BVH and brute ray comparison plus fallback across 251 profiles.

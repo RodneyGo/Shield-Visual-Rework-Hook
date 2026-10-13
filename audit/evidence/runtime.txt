@@ -1,0 +1,3 @@
+burst: captured=128, capture_dropped=0, markers=32, first_sequence=97
+stale: delivered_age_ms=654.7
+metadata: unprofiled_virtual_function_called=2

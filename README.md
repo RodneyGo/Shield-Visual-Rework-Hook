@@ -8,6 +8,12 @@ The optional prebuilt candidate is in `binaries/0.54-dev1/`; its SHA-256 matches
 the DLL used for the baseline game test. Build from source if you prefer. Use it to inspect the native code or build your own DLL
 for an existing Shield Visuals Rework installation.
 
+## Review status
+
+See the [2026-10-14 source review](audit/REVIEW_2026-10-14.md) for confirmed
+buffer/validation defects and open compatibility risks. Runtime fixes have
+not been applied to 0.54-dev1.
+
 ## What the DLL does
 
 The game-side Lua script loads the DLL with `package.loadlib`. The DLL uses
