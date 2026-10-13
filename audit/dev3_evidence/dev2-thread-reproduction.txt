@@ -1,0 +1,1 @@
+FAIL: sequential worker handoff must retain native API, not return nil (0)

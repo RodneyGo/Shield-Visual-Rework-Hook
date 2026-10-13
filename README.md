@@ -1,13 +1,19 @@
 # Shield Visuals Rework — native component
 
-Experimental native component **0.54-dev2**, built for X4 9.00 build 611726.
+Experimental native component **0.54-dev3**, built for X4 9.00 build 611726.
 Standalone checks have passed. The new candidate still needs in-game validation.
 This is not a new full-mod release or a guarantee of compatibility with updates.
 
 This repository builds `svr_contact_probe.dll`. It contains source, tests and an
-optional prebuilt candidate in `binaries/0.54-dev2`. It contains no X4 executable,
-game LuaJIT DLL, ship geometry or textures. The older dev1 binary and audit are
+optional prebuilt candidate in `binaries/0.54-dev3`. It contains no X4 executable,
+game LuaJIT DLL, ship geometry or textures. The older binaries and audit are
 kept as historical evidence; use the version matching the reviewed source.
+
+Dev2 produced no shield effects in the user test. Dev3 removes its incorrect
+OS-thread affinity check and requires a successful native start before polling.
+The old failure and the corrected sequential thread handoff were reproduced in
+an isolated real LuaJIT host. Dev3 still needs confirmation in X4. See
+[dev3 regression fix](audit/THREAD_HANDOFF_0.54-dev3.md).
 
 ## What it does
 
@@ -48,7 +54,15 @@ Developer PowerShell for VS 2022. Use a new build directory when changing tools.
 
 Tests hook only their own synthetic processes; they do not start or attach to X4.
 The optional loader and fleet tools require your own game installation/data and
-are not part of default CTest. Successful compilation is not a security audit or
+are not part of default CTest. To test the actual Lua ABI and bridge lifecycle:
+
+```powershell
+.\out\Release\loader_selftest.exe "C:\path\to\X4 Foundations\lua51_64.dll" `
+  ".\out\Release\svr_contact_probe.dll" ".\integration\contact_probe.lua" `
+  ".\tests\bridge_lifecycle.lua"
+```
+
+Run this from the repository root. It does not launch X4 or install game hooks. Successful compilation is not a security audit or
 an in-game acceptance test.
 
 ## Install the candidate
@@ -59,7 +73,8 @@ an in-game acceptance test.
 3. Copy the built DLL to
    `X4 Foundations/extensions/shield_visuals_rework/native/svr_contact_probe.dll`.
 4. Copy `integration/contact_probe.lua` to the same extension's
-   `ui/contact_probe.lua`. This matching bridge uses the session-reset API.
+   `ui/contact_probe.lua`. This matching bridge checks the native start result
+   and uses the session-reset API.
 5. Keep the geometry, shaders and other files from the full mod. Start with
    Protected UI Mode disabled. To roll back, restore both backed-up files.
 

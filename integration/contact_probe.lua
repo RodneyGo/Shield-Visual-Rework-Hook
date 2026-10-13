@@ -264,9 +264,14 @@ local function report(text)
     end
 end
 local previousTime = nil
+local firstUpdate = true
 local function tick()
     local valid, present = pcall(ffi.C.IsPlayerValid)
     local now = getElapsedTime()
+    if firstUpdate then
+        firstUpdate = false
+        probe.note("first update: valid=" .. tostring(valid) .. " player=" .. tostring(present) .. " time=" .. tostring(now))
+    end
     -- A backward game clock also catches loading an older save without a menu frame.
     if started and (not valid or not present or (previousTime and now < previousTime)) then
         if probe.stop then report(probe.stop()) end
@@ -276,8 +281,13 @@ local function tick()
     end
     previousTime = now
     if valid and present and not started then
+        local result = probe.start()
+        probe.note("native start: " .. tostring(result))
+        if type(result) ~= "string" or not result:find("^SVR: ACTIVE;") then
+            error("native start rejected: " .. tostring(result))
+        end
         started = true
-        report(probe.start())
+        report(result)
     end
     if not started then return end
     discoverAddons()
@@ -289,9 +299,9 @@ local function update()
     local ok, why = pcall(tick)
     if not ok then
         failed = true
-        if probe.stop then probe.stop() end
+        if probe.stop then pcall(probe.stop) end
         report("SVR CONTACT: UI bridge stopped: " .. tostring(why))
-        probe.note("UI bridge stopped: " .. tostring(why))
+        pcall(probe.note, "UI bridge stopped: " .. tostring(why))
     end
 end
 report(probe.status())

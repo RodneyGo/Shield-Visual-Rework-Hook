@@ -4,6 +4,7 @@
 #include "abi.h"
 #include "shell.h"
 #include "fleet_shell.h"
+#include "lua_dispatch.h"
 #include <MinHook.h>
 #include <bcrypt.h>
 #include <cstdio>
@@ -25,7 +26,8 @@ bool detailedDiagnostics = false;
 bool initialized = false, compatible = false, installed = false, attempted = false;
 bool missileCompatible = false;
 bool contactInstalled=false,missileInstalled=false,sessionActive=false,directionCompatible=false;
-DWORD uiThread=0;
+DWORD previousApiThread=0;
+unsigned loggedThreadChanges=0,loggedStarts=0;
 std::vector<MetadataBinding> metadataBindings;
 ULONGLONG startTime = 0, lastDrain = 0, lastSummary = 0;
 char status[512] = "SVR CONTACT: not initialized";
@@ -143,7 +145,7 @@ void Initialize() {
     const auto hash = ExeHash(exe);
     imageBase = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
     LARGE_INTEGER frequency; QueryPerformanceFrequency(&frequency);
-    if (logFile) fprintf(logFile,"{\"type\":\"startup\",\"version\":\"0.54-dev2\",\"exe_sha256\":\"%s\",\"detailed_diagnostics\":%s}\n",hash.c_str(),detailedDiagnostics?"true":"false");
+    if (logFile) fprintf(logFile,"{\"type\":\"startup\",\"version\":\"0.54-dev3\",\"exe_sha256\":\"%s\",\"detailed_diagnostics\":%s}\n",hash.c_str(),detailedDiagnostics?"true":"false");
     const auto* dosHeader=reinterpret_cast<const IMAGE_DOS_HEADER*>(imageBase);
     const auto* ntHeader=reinterpret_cast<const IMAGE_NT_HEADERS64*>(imageBase+dosHeader->e_lfanew);
     std::span<const unsigned char> image(reinterpret_cast<const unsigned char*>(imageBase),ntHeader->OptionalHeader.SizeOfImage);
@@ -178,13 +180,18 @@ void Initialize() {
     FlushLog();
 }
 void Start() {
+    if(logFile&&loggedStarts++<32) {
+        fprintf(logFile,"{\"type\":\"start_requested\",\"thread\":%lu,\"compatible\":%s,\"active\":%s}\n",GetCurrentThreadId(),compatible?"true":"false",sessionActive?"true":"false");
+        FlushLog();
+    }
     if (!compatible || sessionActive) return;
     if(attempted) {
         if(installed){Stop();SetCapture(true);sessionActive=true;}
     } else {
     attempted = true;
     const auto init = MH_Initialize();
-    if (init != MH_OK) { SetStatus("SVR CONTACT: MinHook initialization failed; disabled"); return; }
+    if(logFile)fprintf(logFile,"{\"type\":\"hook_initialize\",\"status\":%d}\n",int(init));
+    if (init != MH_OK) { SetStatus("SVR CONTACT: MinHook initialization failed; disabled"); FlushLog();return; }
     auto install=[&](uintptr_t rva,void* detour,void** trampoline,const char* name){
         void* target=reinterpret_cast<void*>(imageBase+rva);
         auto result=MH_CreateHook(target,detour,trampoline);
@@ -225,8 +232,8 @@ void Poll() {
     if (now-lastSummary >= 5000 && loggedSummaries<DiagnosticSummaryLimit) { lastSummary = now; Summary(); }
 }
 // Resolve only the small Lua API used here from the game's existing LuaJIT DLL.
-struct lua_State;
-using LuaFn = int(*)(lua_State*);
+INIT_ONCE luaInitialized=INIT_ONCE_STATIC_INIT;
+LuaDispatch dispatch;
 void (*createTable)(lua_State*,int,int);
 void (*pushClosure)(lua_State*,LuaFn,int);
 void (*setField)(lua_State*,int,const char*);
@@ -311,15 +318,21 @@ int LuaHasProfile(lua_State* L) {
     if(!compatible||!input||length>10||sscanf_s(input,"%u%c",&id,&trailing,1)!=1||!HasFleetProfile(id)){pushNil(L);return 1;}
     pushString(L,"ready");return 1;
 }
-template<LuaFn F> int OnUIThread(lua_State* L) {
-    if(GetCurrentThreadId()!=uiThread){pushNil(L);return 1;}
+template<LuaFn F> int LoggedCall(lua_State* L) {
+    const DWORD thread=GetCurrentThreadId();
+    if(thread!=previousApiThread) {
+        if(logFile&&loggedThreadChanges++<32) {
+            fprintf(logFile,"{\"type\":\"api_thread\",\"previous\":%lu,\"current\":%lu}\n",previousApiThread,thread);
+            FlushLog();
+        }
+        previousApiThread=thread;
+    }
     return F(L);
 }
+template<LuaFn F> int SerializedCall(lua_State* L) {
+    return dispatch.Call<LoggedCall<F>>(L);
 }
-extern "C" __declspec(dllexport) int luaopen_svr_contact_probe(lua_State* L) {
-    if(uiThread&&uiThread!=GetCurrentThreadId())return 0;
-    uiThread=GetCurrentThreadId();
-    Stop(); // A new UI loader must not replay contacts retained by the old UI.
+BOOL CALLBACK ResolveLua(PINIT_ONCE,PVOID,PVOID*) {
     HMODULE lua = GetModuleHandleW(L"lua51_64.dll");
     if (!lua) return 0;
     createTable = reinterpret_cast<decltype(createTable)>(GetProcAddress(lua,"lua_createtable"));
@@ -328,7 +341,15 @@ extern "C" __declspec(dllexport) int luaopen_svr_contact_probe(lua_State* L) {
     pushString = reinterpret_cast<decltype(pushString)>(GetProcAddress(lua,"lua_pushstring"));
     toString = reinterpret_cast<decltype(toString)>(GetProcAddress(lua,"lua_tolstring"));
     pushNil = reinterpret_cast<decltype(pushNil)>(GetProcAddress(lua,"lua_pushnil"));
-    if (!createTable || !pushClosure || !setField || !pushString || !toString || !pushNil) return 0;
+    dispatch.pushClosure=pushClosure;dispatch.pushString=pushString;
+    dispatch.getTop=reinterpret_cast<decltype(dispatch.getTop)>(GetProcAddress(lua,"lua_gettop"));
+    dispatch.insert=reinterpret_cast<decltype(dispatch.insert)>(GetProcAddress(lua,"lua_insert"));
+    dispatch.pcall=reinterpret_cast<decltype(dispatch.pcall)>(GetProcAddress(lua,"lua_pcall"));
+    dispatch.error=reinterpret_cast<decltype(dispatch.error)>(GetProcAddress(lua,"lua_error"));
+    return createTable&&pushClosure&&setField&&pushString&&toString&&pushNil&&dispatch.getTop&&dispatch.insert&&dispatch.pcall&&dispatch.error;
+}
+int LuaOpen(lua_State* L) {
+    Stop(); // A new UI loader must not replay contacts retained by the old UI.
     try { Initialize(); }
     catch (...) {
         compatible=contactCompatible=missileCompatible=directionCompatible=false;
@@ -336,18 +357,23 @@ extern "C" __declspec(dllexport) int luaopen_svr_contact_probe(lua_State* L) {
         SetStatus("SVR CONTACT: initialization failed; disabled");
     }
     createTable(L,0,12);
-    pushClosure(L,&OnUIThread<LuaStart>,0); setField(L,-2,"start");
-    pushClosure(L,&OnUIThread<LuaStop>,0); setField(L,-2,"stop");
-    pushClosure(L,&OnUIThread<LuaPoll>,0); setField(L,-2,"poll");
-    pushClosure(L,&OnUIThread<LuaStatus>,0); setField(L,-2,"status");
-    pushClosure(L,&OnUIThread<LuaMarker>,0); setField(L,-2,"marker");
-    pushClosure(L,&OnUIThread<LuaNote>,0); setField(L,-2,"note");
-    pushClosure(L,&OnUIThread<LuaFleetProject>,0); setField(L,-2,"fleet_project");
-    pushClosure(L,&OnUIThread<LuaMarkerDirection>,0); setField(L,-2,"marker_direction");
-    pushClosure(L,&OnUIThread<LuaFleetProjectIncoming>,0); setField(L,-2,"fleet_project_incoming");
-    pushClosure(L,&OnUIThread<LuaRegisterAddon>,0); setField(L,-2,"register_addon");
-    pushClosure(L,&OnUIThread<LuaHasProfile>,0); setField(L,-2,"has_profile");
+    pushClosure(L,&SerializedCall<LuaStart>,0); setField(L,-2,"start");
+    pushClosure(L,&SerializedCall<LuaStop>,0); setField(L,-2,"stop");
+    pushClosure(L,&SerializedCall<LuaPoll>,0); setField(L,-2,"poll");
+    pushClosure(L,&SerializedCall<LuaStatus>,0); setField(L,-2,"status");
+    pushClosure(L,&SerializedCall<LuaMarker>,0); setField(L,-2,"marker");
+    pushClosure(L,&SerializedCall<LuaNote>,0); setField(L,-2,"note");
+    pushClosure(L,&SerializedCall<LuaFleetProject>,0); setField(L,-2,"fleet_project");
+    pushClosure(L,&SerializedCall<LuaMarkerDirection>,0); setField(L,-2,"marker_direction");
+    pushClosure(L,&SerializedCall<LuaFleetProjectIncoming>,0); setField(L,-2,"fleet_project_incoming");
+    pushClosure(L,&SerializedCall<LuaRegisterAddon>,0); setField(L,-2,"register_addon");
+    pushClosure(L,&SerializedCall<LuaHasProfile>,0); setField(L,-2,"has_profile");
     return 1;
+}
+}
+extern "C" __declspec(dllexport) int luaopen_svr_contact_probe(lua_State* L) {
+    if(!InitOnceExecuteOnce(&luaInitialized,ResolveLua,nullptr,nullptr))return 0;
+    return SerializedCall<LuaOpen>(L);
 }
 BOOL WINAPI DllMain(HINSTANCE module,DWORD reason,LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) selfModule = module;

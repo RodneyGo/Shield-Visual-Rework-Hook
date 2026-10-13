@@ -1,6 +1,8 @@
 # 0.54-dev2 — audit resolutions (2026-10-14)
 
-Prepared candidate; full in-game acceptance is pending. The original report and
+Superseded by dev3: the user reported no effects in the dev2 game test.
+See [thread handoff regression](THREAD_HANDOFF_0.54-dev3.md). The checks below
+are historical standalone results and did not catch the OS-thread restriction. The original report and
 dev1 evidence are historical. The old `audit/repro` harness describes dev1 and
 expects its defects; use commit b4b632c to reproduce that state. Current regression
 tests are under `tests/` and run through default CTest.

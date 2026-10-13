@@ -1,0 +1,5 @@
+PASS: sequential Lua VM handoff and loader reload across OS threads
+PASS: protected dispatch preserves arguments/results, releases on Lua error, rejects concurrent/reentrant entry
+PASS: real LuaJIT syntax/load/API, wrong-EXE rejection, simulated UI bridge. No game process started.
+PASS: menu/load, repeated menu, new session, backward clock and addon rediscovery
+PASS: nil/disabled native start never marks bridge active; failure is recorded once

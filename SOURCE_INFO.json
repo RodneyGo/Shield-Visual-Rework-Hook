@@ -1,11 +1,11 @@
 {
-  "native_version": "0.54-dev2",
-  "status": "experimental; standalone tested, game test pending",
+  "native_version": "0.54-dev3",
+  "status": "thread handoff regression fixed in isolated tests; game confirmation pending",
   "baseline": "X4 9.00 build 611726",
-  "tested_dll_sha256": "db87ff2024236a56b91dfe76f24da3f2c4973d0c1c34ea3e6a3bf0e1fb63878f",
+  "tested_dll_sha256": "e8cf8e8e39bf00369a34c0ff20815e6b153680cc44b835e6f331b8da4cfcced0",
   "other_real_build_tested": false,
   "sources": {
-    "probe.cpp": "52ab6a8bbaa79a1d191cb0050da2fc436c3480d93565c8c7bf56c06b395fea5a",
+    "probe.cpp": "0c8bd930749c21f8495fcfa91d7a89e4aa6e1677a0c89752655ed982d794fecf",
     "capture.cpp": "d6d10a2feec71a374a84d3a5b97e45afd87949ee57424f19891cdda0ddbb2ca4",
     "capture.h": "ae7a3ab1099c0cb35669a7cdb0be22e80f144849c441160f66de9709a9c39c60",
     "entry.asm": "bc85172657f8c14b749b1681de6d236b6613ca572e23d0e926e94df14234733e",
@@ -23,6 +23,7 @@
     "abi.h": "b768e6bfacb36e9681c6a64b231ab3010b874115122e7a53525b95c9bc4d255e",
     "abi_profiles.h": "0c73ce2b0540c1f8122fb089f8ed71bb3a77e1bbcdd3b16f2ae051fcbf464517",
     "fleet_direction_selftest.cpp": "96fc5768fb638729b004cb7c793b0948e06413a8e94988668e8efd3e826dd985",
-    "loader_selftest.cpp": "944d013a85e6ad7ff3d8266925e5a371ae26e88c04286cbe6919196ade61f9e9"
+    "loader_selftest.cpp": "481150c65e9b41a177ae3b929c4a2dca76a2afece078a8f486bb1c2bac15a708",
+    "lua_dispatch.h": "8509c435dd6d908a584e5146480569cca9464ca748e87a53fec5bf5f004e576a"
   }
 }
