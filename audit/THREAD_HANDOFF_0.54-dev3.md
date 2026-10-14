@@ -29,6 +29,8 @@ menu/load transitions and nil/disabled start responses. Existing CTest16/16,
 eleven ABI cases and directional checks over 286 unique profiles also pass.
 Evidence is in `audit/dev3_evidence/`.
 
-In-game acceptance of dev3 is still pending. Sequential handoff is a demonstrated
+Update 2026-10-14: a subsequent user-run battle confirmed hooks, capture and
+delivery; see [results and limits](../RELEASE_NOTES.md). At preparation time,
+in-game acceptance was pending. Sequential handoff is a demonstrated
 regression and fits the game log; confirmation needs a new log showing armed
 capture and visible shield effects. No other real game build was tested.

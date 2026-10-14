@@ -1,7 +1,7 @@
 # Shield Visuals Rework — native component
 
-Experimental native component **0.54-dev3**, built for X4 9.00 build 611726.
-Standalone checks have passed. The new candidate still needs in-game validation.
+Game-tested native component **0.54-dev3**, tested on X4 9.00 build 611726.
+The exact tested DLL is retained. See [release notes](RELEASE_NOTES.md) for game-test results and limits.
 This is not a new full-mod release or a guarantee of compatibility with updates.
 
 This repository builds `svr_contact_probe.dll`. It contains source, tests and an
@@ -12,7 +12,8 @@ kept as historical evidence; use the version matching the reviewed source.
 Dev2 produced no shield effects in the user test. Dev3 removes its incorrect
 OS-thread affinity check and requires a successful native start before polling.
 The old failure and the corrected sequential thread handoff were reproduced in
-an isolated real LuaJIT host. Dev3 still needs confirmation in X4. See
+an isolated real LuaJIT host. A subsequent user-run battle confirmed active
+capture and delivery. See [game-test results](RELEASE_NOTES.md) and
 [dev3 regression fix](audit/THREAD_HANDOFF_0.54-dev3.md).
 
 ## What it does

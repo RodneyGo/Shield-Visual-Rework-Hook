@@ -1,6 +1,6 @@
 {
   "native_version": "0.54-dev3",
-  "status": "thread handoff regression fixed in isolated tests; game confirmation pending",
+  "status": "game-tested release preparation; exact tested dev3 binary retained",
   "baseline": "X4 9.00 build 611726",
   "tested_dll_sha256": "e8cf8e8e39bf00369a34c0ff20815e6b153680cc44b835e6f331b8da4cfcced0",
   "other_real_build_tested": false,
@@ -25,5 +25,34 @@
     "fleet_direction_selftest.cpp": "96fc5768fb638729b004cb7c793b0948e06413a8e94988668e8efd3e826dd985",
     "loader_selftest.cpp": "481150c65e9b41a177ae3b929c4a2dca76a2afece078a8f486bb1c2bac15a708",
     "lua_dispatch.h": "8509c435dd6d908a584e5146480569cca9464ca748e87a53fec5bf5f004e576a"
+  },
+  "game_test": {
+    "date": "2026-10-14",
+    "baseline": "X4 9.00 build 611726",
+    "summary": {
+      "type": "summary",
+      "elapsed_ms": 230015,
+      "seen": 92663,
+      "captured": 92663,
+      "dropped": 0,
+      "read_faults": 0,
+      "limited": 0,
+      "stopped": false
+    },
+    "delivery": {
+      "type": "delivery",
+      "delivered": 92660,
+      "expired": 0,
+      "invalid": 0,
+      "capture_dropped": 0
+    },
+    "performance": "User reported acceptable performance; no frame-time measurements.",
+    "limitations": [
+      "Dragon: expected weapon count excludes 2 turrets, actual includes them; macro checks pass.",
+      "Scimitar/Osaka: runtime operational turret list empty, fewer shields; physical absence versus enumeration semantics not fully resolved.",
+      "MD %10+ placeholders misformat DPS/ammo fields; no reliable numeric values from those text fields.",
+      "Global visual budget reached (96 active wave entries); no skipped-count telemetry.",
+      "Only 4 ship geometries in scene."
+    ]
   }
 }
