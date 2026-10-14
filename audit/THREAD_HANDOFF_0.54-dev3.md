@@ -31,6 +31,7 @@ Evidence is in `audit/dev3_evidence/`.
 
 Update 2026-10-14: a subsequent user-run battle confirmed hooks, capture and
 delivery; see [results and limits](../RELEASE_NOTES.md). At preparation time,
-in-game acceptance was pending. Sequential handoff is a demonstrated
-regression and fits the game log; confirmation needs a new log showing armed
-capture and visible shield effects. No other real game build was tested.
+in-game acceptance was pending. The later game log records API thread handoffs,
+successful hook installation, armed capture and delivered contacts. The user
+accepted dev3 as working. This does not validate every visual effect or another
+real game build; the historical first-hit rendering delay remains open.
